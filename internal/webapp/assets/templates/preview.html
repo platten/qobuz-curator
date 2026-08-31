@@ -1,0 +1,28 @@
+{{define "preview"}}{{template "head" .}}
+<div class="page-title">
+  <div><p class="eyebrow">READ-ONLY PREVIEW</p><h1>{{.Preview.Playlist.Name}}</h1><p>{{.Preview.Playlist.Description}}</p></div>
+  <div class="stats"><strong>{{matched .Preview}}</strong> matched <strong>{{skipped .Preview}}</strong> skipped</div>
+</div>
+<section class="panel table-wrap">
+  <table><thead><tr><th>#</th><th>Requested</th><th>Qobuz match</th><th>Edition</th><th>Score</th><th>Status</th></tr></thead><tbody>
+  {{range .Preview.Matches}}<tr class="{{.Status}}"><td>{{.Request.Position}}</td><td><strong>{{.Request.Title}}</strong><small>{{join .Request.Artists}}</small></td><td>{{if .Candidate}}<strong>{{.Candidate.Title}}</strong><small>{{join .Candidate.Artists}} · {{text .Candidate.Album "Unknown album"}}</small>{{else}}No candidate{{end}}</td><td>{{if .Candidate}}{{number .Candidate.MaximumBitDepth}}-bit / {{decimal .Candidate.MaximumSamplingRate}} kHz{{end}}</td><td>{{score .Score}}<details><summary>Why</summary>{{join .Explanation}}</details></td><td><span class="badge {{.Status}}">{{.Status}}</span></td></tr>{{end}}
+  </tbody></table>
+</section>
+<section class="panel refine">
+  <h2>Refine this playlist</h2><p>A refinement creates a new preview; this one stays unchanged.</p>
+  {{if .Error}}<div class="error"><strong>Could not refine playlist</strong><pre>{{.Error}}</pre></div>{{end}}
+  {{if .OpenAIEnabled}}<form method="post" action="/previews/{{.Preview.ID}}/refine" data-wait-message="Refining with OpenAI and resolving recordings with Qobuz…"><input type="hidden" name="csrf" value="{{.CSRF}}"><label>Describe the changes<textarea name="prompt" rows="5" required>{{.RefinementPrompt}}</textarea></label><button>Generate refined preview</button></form>{{else}}<p class="muted">In-app refinement requires an OpenAI API key.</p>{{end}}
+  <details><summary>Copy a refinement prompt for ChatGPT</summary><textarea rows="14" readonly>{{.ChatGPTPrompt}}</textarea></details>
+</section>
+<section class="panel publish">
+  <h2>Publish this exact preview</h2>
+  <form method="post" action="/previews/{{.Preview.ID}}/publish" data-wait-message="Writing and verifying the playlist with Qobuz…">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <div class="choice"><label><input type="radio" name="mode" value="create_new" required> Create a new private playlist</label><input name="new_name" value="{{.Preview.Playlist.Name}}"></div>
+    <div class="choice"><label><input type="radio" name="mode" value="append_existing" required> Append to an existing playlist</label><select name="append_playlist_id"><option value="">Choose a playlist…</option>{{range .Playlists}}<option value="{{.ID}}">{{.Name}} ({{.TrackCount}} tracks)</option>{{end}}</select></div>
+    <div class="choice"><label><input type="radio" name="mode" value="replace_existing" required> Completely replace an existing playlist</label><select name="playlist_id"><option value="">Choose a playlist…</option>{{range .Playlists}}<option value="{{.ID}}">{{.Name}} ({{.TrackCount}} tracks)</option>{{end}}</select></div>
+    <label class="confirm"><input type="checkbox" name="confirmed" value="true" required> I reviewed this preview and approve the selected Qobuz write.</label>
+    <button>Publish to Qobuz</button>
+  </form>
+</section>
+{{template "foot" .}}{{end}}

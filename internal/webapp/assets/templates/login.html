@@ -1,0 +1,6 @@
+{{define "login"}}{{template "head" .}}
+<section class="panel narrow">
+  <h1>Log in</h1>{{if .Error}}<p class="error">{{.Error}}</p>{{end}}
+  <form method="post" action="/login" data-wait-message="Checking credentials…"><input type="hidden" name="csrf" value="{{.CSRF}}"><label>Password <input type="password" name="password" required autofocus></label><button>Continue</button></form>
+</section>
+{{template "foot" .}}{{end}}

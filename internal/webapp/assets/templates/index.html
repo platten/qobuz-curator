@@ -1,0 +1,53 @@
+{{define "index"}}{{template "head" .}}
+<div class="hero">
+  <div><p class="eyebrow">PRIVATE MUSIC WORKFLOW</p><h1>Turn a recommendation into a Roon-ready Qobuz playlist.</h1></div>
+  <p>Import a ChatGPT JSON export, inspect deterministic Qobuz matches, then create, append to, or safely replace a playlist.</p>
+</div>
+{{if .Error}}<div class="error panel"><strong>Could not prepare playlist</strong><pre>{{.Error}}</pre></div>{{end}}
+<div class="grid">
+  <section class="panel">
+    <h2>Import from ChatGPT</h2>
+    <form method="post" action="/previews" enctype="multipart/form-data" data-wait-message="Resolving recordings with Qobuz…">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <label>Upload JSON <input type="file" name="playlist_file" accept="application/json,.json"></label>
+      <div class="or">or paste JSON</div>
+      <textarea name="playlist_json" rows="13" placeholder='{"schema_version":"1.0", ...}'></textarea>
+      <button type="submit">Resolve and preview</button>
+    </form>
+  </section>
+  <section class="panel">
+    <h2>Recommend in this app</h2>
+    {{if .OpenAIEnabled}}
+    <form method="post" action="/recommend" data-wait-message="Asking OpenAI and resolving recordings with Qobuz…">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <label>Describe the music<textarea name="prompt" rows="8" required placeholder="Late-night modal jazz, mostly 1958–1965, 20 tracks..."></textarea></label>
+      <button type="submit">Generate and preview</button>
+    </form>
+    {{else}}<p class="muted">Disabled because no OpenAI API key is configured. Import ChatGPT JSON instead.</p>{{end}}
+    <hr>
+    <h3>Recent operations</h3>
+    {{if .Operations}}<ul class="operations">{{range .Operations}}<li><a href="/operations/{{.ID}}">{{.DestinationName}}</a><span class="badge {{.Status}}">{{.Status}}</span></li>{{end}}</ul>{{else}}<p class="muted">Nothing published yet.</p>{{end}}
+  </section>
+</div>
+<section class="panel playlist-seeds">
+  <h2>Recommend from your Qobuz playlists</h2>
+  {{if .OpenAIEnabled}}{{if .PlaylistLoadError}}<p class="error">{{.PlaylistLoadError}}</p>{{end}}{{if .Playlists}}
+  <form method="post" action="/recommend/from-playlists" data-wait-message="Analyzing references with OpenAI and resolving recordings with Qobuz…">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <fieldset><legend>Select one or more musical references</legend><div class="playlist-options">{{range .Playlists}}<label class="playlist-option"><input type="checkbox" name="playlist_ids" value="{{.ID}}"><span><strong>{{.Name}}</strong><small>{{.TrackCount}} tracks{{if .Description}} · {{.Description}}{{end}}</small></span></label>{{end}}</div></fieldset>
+    <div class="seed-controls">
+      <label>Number of recommendations<input type="number" name="track_count" value="30" min="1" max="200" required></label>
+      <label>Additional direction <span class="muted">(optional)</span><textarea name="additional_prompt" rows="3" placeholder="Favor lesser-known artists and a calm late-night arc."></textarea></label>
+    </div>
+    <p class="muted">Playlist names and track metadata are sent to OpenAI. Sources guide the sound but are not the recommendation pool.</p>
+    <button type="submit">Analyze and preview</button>
+  </form>
+  {{else}}<p class="muted">No Qobuz playlists are available yet.</p>{{end}}{{else}}<p class="muted">Disabled because no OpenAI API key is configured.</p>{{end}}
+</section>
+<section class="panel import-guide">
+  <h2>Create JSON with ChatGPT</h2>
+  <p>Download the schema, attach it to ChatGPT, and request a playlist as JSON. Upload the result above.</p>
+  <p><a class="button" href="/playlist-v1.schema.json" download>Download playlist JSON schema</a></p>
+  <label>Copy-ready ChatGPT prompt<textarea rows="8" readonly>Recommend 6–50 tracks based on the following request: [describe the music]. Return only a JSON object conforming exactly to the attached playlist-v1.schema.json, with no Markdown fences or commentary. Use canonical studio recordings unless requested otherwise. Never invent uncertain metadata. Arrange tracks in an intentional listening order.</textarea></label>
+</section>
+{{template "foot" .}}{{end}}

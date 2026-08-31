@@ -1,0 +1,33 @@
+services:
+  qobuz-curator:
+    build: .
+    container_name: qobuz-curator
+    command: ["serve", "--no-browser", "--config", "/data/qobuz-curator.yaml"]
+    environment:
+      QOBUZ_CURATOR_HOST: 0.0.0.0
+      QOBUZ_CURATOR_PORT: 49277
+      QOBUZ_CURATOR_DATA_DIR: /data
+    restart: unless-stopped
+    init: true
+    read_only: true
+    ports:
+      - "127.0.0.1:49277:49277"
+    volumes:
+      - ./data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    healthcheck:
+      test: ["CMD", "/qobuz-curator", "healthcheck", "--config", "/data/qobuz-curator.yaml"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    stop_grace_period: 15s
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"

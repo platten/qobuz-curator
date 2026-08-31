@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qobuz-curator.local/schemas/playlist-v1.schema.json",
+  "title": "Qobuz Curator Playlist Recommendation",
+  "description": "A service-neutral playlist recommendation that Qobuz Curator can match against the Qobuz catalog.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "name",
+    "tracks"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "The Qobuz Curator interchange schema version.",
+      "const": "1.0"
+    },
+    "name": {
+      "description": "A concise, distinctive playlist name.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 250
+    },
+    "description": {
+      "description": "A short explanation of the playlist's theme, mood, and progression.",
+      "type": "string",
+      "maxLength": 2000,
+      "default": ""
+    },
+    "source_prompt": {
+      "description": "The listener's original recommendation request, retained for provenance.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 10000,
+      "default": null
+    },
+    "tracks": {
+      "description": "Recommendations in intentional playback order.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/$defs/track"
+      }
+    }
+  },
+  "$defs": {
+    "track": {
+      "title": "Recommended track",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "position",
+        "title",
+        "artists"
+      ],
+      "properties": {
+        "position": {
+          "description": "One-based playback position. Positions must be unique within the playlist.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "title": {
+          "description": "The exact recording title, including a version qualifier only when that version is intended.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "artists": {
+          "description": "Primary artist first, followed by featured artists when relevant.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "album": {
+          "description": "Canonical album or release title. Omit when uncertain.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 500,
+          "default": null
+        },
+        "release_year": {
+          "description": "Original release year for the requested recording. Omit when uncertain.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1900,
+          "maximum": 2200,
+          "default": null
+        },
+        "duration_seconds": {
+          "description": "Recording duration in whole seconds. Omit rather than estimate.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 7200,
+          "default": null
+        },
+        "isrc": {
+          "description": "Official ISRC when confidently known. Never invent one; omit when uncertain.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 5,
+          "maxLength": 32,
+          "default": null
+        },
+        "version_hints": {
+          "description": "Short identity constraints such as studio, original album version, not live, or not remix.",
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "default": []
+        }
+      }
+    }
+  }
+}

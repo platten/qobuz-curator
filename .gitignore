@@ -1,0 +1,13 @@
+/.env
+qobuz-curator.yaml
+qobuz-curator
+qobuz-curator.exe
+coverage.out
+coverage
+*.cover
+dist/
+data/
+
+# Keep only the canonical example playlist under version control.
+/samples/*
+!/samples/playlist.json

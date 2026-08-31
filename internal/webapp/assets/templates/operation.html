@@ -1,0 +1,10 @@
+{{define "operation"}}{{template "head" .}}
+<section class="panel narrow">
+  <p class="eyebrow">PUBLISH RESULT</p><h1>{{.Operation.DestinationName}}</h1>
+  <p><span class="badge {{.Operation.Status}}">{{.Operation.Status}}</span> {{.Operation.Mode}}</p>
+  {{if .Operation.Error}}<div class="error">{{deref .Operation.Error}}</div>{{end}}
+  <dl><dt>Operation</dt><dd>{{.Operation.ID}}</dd><dt>Playlist ID</dt><dd>{{text .Operation.DestinationPlaylistID "—"}}</dd>{{range $key,$value := .Operation.Result}}<dt>{{$key}}</dt><dd>{{$value}}</dd>{{end}}</dl>
+  {{if mutable .Operation.Mode}}<form method="post" action="/operations/{{.Operation.ID}}/restore" data-wait-message="Restoring and verifying the Qobuz backup…"><input type="hidden" name="csrf" value="{{.CSRF}}"><label class="confirm"><input type="checkbox" name="confirmed" value="true" required> Restore the saved pre-operation backup.</label><button class="danger">Restore backup</button></form>{{end}}
+  <p><a href="/">Return to dashboard</a></p>
+</section>
+{{template "foot" .}}{{end}}

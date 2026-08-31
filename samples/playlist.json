@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "name": "1959: A Turning Point in Jazz",
+  "description": "A compact tour through modal and cool jazz landmarks.",
+  "source_prompt": "Create a concise playlist of landmark 1959 jazz recordings.",
+  "tracks": [
+    {
+      "position": 1,
+      "title": "So What",
+      "artists": ["Miles Davis"],
+      "album": "Kind of Blue",
+      "release_year": 1959,
+      "duration_seconds": 545,
+      "version_hints": ["studio", "original album version"]
+    },
+    {
+      "position": 2,
+      "title": "Take Five",
+      "artists": ["The Dave Brubeck Quartet"],
+      "album": "Time Out",
+      "release_year": 1959,
+      "duration_seconds": 324,
+      "version_hints": ["studio", "not live"]
+    },
+    {
+      "position": 3,
+      "title": "Blue in Green",
+      "artists": ["Miles Davis"],
+      "album": "Kind of Blue",
+      "release_year": 1959,
+      "duration_seconds": 337,
+      "version_hints": ["studio"]
+    }
+  ]
+}

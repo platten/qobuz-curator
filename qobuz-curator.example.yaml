@@ -1,0 +1,29 @@
+# Prefer `qobuz-curator init` (or `init --interactive`) for a native install.
+# This example can also be copied to data/qobuz-curator.yaml for Docker Compose.
+data_dir: ./data
+database_name: qobuz_curator.sqlite3
+host: 127.0.0.1
+# Required for any non-loopback host name used by a reverse proxy or Tailscale.
+allowed_hosts: []
+# Zero atomically selects a free high port. Use a fixed value for containers.
+port: 0
+provider: fake
+qobuz_app_id: ""
+qobuz_user_auth_token: ""
+qobuz_api_base: https://www.qobuz.com/api.json/0.2
+openai_api_key: ""
+openai_model: gpt-5.6-luna
+openai_api_base: https://api.openai.com/v1
+match_threshold: 0.72
+preview_ttl_hours: 72
+auth_disabled: true
+password_hash: ""
+session_ttl_hours: 24
+# Leave blank only while auth_disabled is true; an ephemeral value is generated.
+session_secret: ""
+# Enable when the browser reaches this service exclusively through HTTPS.
+secure_cookies: false
+# debug, info, warn, or error. Use json and disable color for log collectors.
+log_level: info
+log_format: console
+log_color: true
