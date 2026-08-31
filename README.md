@@ -188,11 +188,11 @@ JSON SBOM from an actual production binary, and write `dist/SHA256SUMS`. Set `VE
 `-Version` in PowerShell to override the Git-derived version.
 
 GitHub Actions enforces formatting, vet, static analysis, vulnerability checks,
-race tests, and 95% coverage. Every CI run independently builds and uploads the
+race tests, and 90% coverage. Every CI run independently builds and uploads the
 same binary, checksum, license, README, and SBOM artifact set, so the SBOM job
 does not disappear when a separate test job fails. Successful validation also builds the Linux AMD64
-container; eligible default-branch/tag images are published with provenance and
-a container SBOM to `ghcr.io/<owner>/<repository>`.
+container; release-tag images are published with provenance and a container SBOM
+to `ghcr.io/<owner>/<repository>`.
 
 ## Logging and failure handling
 
