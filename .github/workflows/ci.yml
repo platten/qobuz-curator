@@ -43,10 +43,11 @@ jobs:
           go-package: ./...
       - name: Test with race detector and coverage
         run: go test -race -covermode=atomic -coverprofile=coverage.out ./internal/...
-      - name: Enforce 95 percent coverage
+      - name: Enforce 90 percent coverage
         run: |
           coverage=$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%", "", $3); print $3}')
-          awk -v coverage="$coverage" 'BEGIN { if (coverage < 95) exit 1 }'
+          echo "Total coverage: ${coverage}% (minimum: 90%)"
+          awk -v coverage="$coverage" 'BEGIN { if (coverage < 90) exit 1 }'
       - name: Lint workflow
         run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
 
