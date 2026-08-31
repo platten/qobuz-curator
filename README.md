@@ -191,8 +191,9 @@ GitHub Actions enforces formatting, vet, static analysis, vulnerability checks,
 race tests, and 90% coverage. Every CI run independently builds and uploads the
 same binary, checksum, license, README, and SBOM artifact set, so the SBOM job
 does not disappear when a separate test job fails. Successful validation also builds the Linux AMD64
-container; release-tag images are published with provenance and a container SBOM
-to `ghcr.io/<owner>/<repository>`.
+container. Release tags attach the compiled Linux, macOS, and Windows binaries,
+checksums, and SBOM to the GitHub Release. They also publish container images
+with provenance and a container SBOM to `ghcr.io/<owner>/<repository>`.
 
 ## Logging and failure handling
 

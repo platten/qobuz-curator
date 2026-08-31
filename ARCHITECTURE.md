@@ -228,9 +228,9 @@ flowchart LR
 
 Both local release scripts invoke the same pinned CycloneDX generator and fail
 closed if SBOM generation fails. An independent CI job uploads binaries,
-checksums, license, documentation, and SBOM on every run. Tagged release
-container publications additionally carry BuildKit provenance and an image
-SBOM.
+checksums, license, documentation, and SBOM on every run. Tagged releases attach
+the compiled binaries, checksums, and SBOM to the GitHub Release. Their container
+publications additionally carry BuildKit provenance and an image SBOM.
 
 ## Extension points
 
