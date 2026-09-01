@@ -86,6 +86,29 @@ func TestInitialConfiguration(t *testing.T) {
 	}
 }
 
+func TestInitialConfigurationFromEnvironment(t *testing.T) {
+	clearApplicationEnvironment(t)
+	t.Setenv("QOBUZ_CURATOR_DATA_DIR", "/data")
+	t.Setenv("QOBUZ_CURATOR_HOST", "0.0.0.0")
+	t.Setenv("QOBUZ_CURATOR_ALLOWED_HOSTS", "localhost,curator.example")
+	t.Setenv("QOBUZ_CURATOR_PORT", "49277")
+	t.Setenv("QOBUZ_CURATOR_OPENAI_API_KEY", "secret-key")
+	t.Setenv("QOBUZ_CURATOR_SESSION_SECRET", strings.Repeat("s", 32))
+	cfg, err := InitialFromEnvironment()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.DataDir != "/data" || cfg.Host != "0.0.0.0" || cfg.Port != 49277 || cfg.OpenAIAPIKey != "secret-key" {
+		t.Fatalf("environment values were not applied: data=%q host=%q port=%d key_set=%t", cfg.DataDir, cfg.Host, cfg.Port, cfg.OpenAIAPIKey != "")
+	}
+	if len(cfg.AllowedHosts) != 2 || cfg.AllowedHosts[0] != "localhost" || cfg.AllowedHosts[1] != "curator.example" {
+		t.Fatalf("allowed hosts were not applied: %#v", cfg.AllowedHosts)
+	}
+	if cfg.SessionSecret != strings.Repeat("s", 32) {
+		t.Fatal("environment session secret was replaced")
+	}
+}
+
 func TestPlatformDefaultConfigurationPath(t *testing.T) {
 	clearApplicationEnvironment(t)
 	directory := isolateDefaultConfig(t)

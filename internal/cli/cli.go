@@ -33,11 +33,12 @@ import (
 )
 
 type options struct {
-	configFile string
-	host       string
-	port       int
-	noBrowser  bool
-	colorMode  string
+	configFile       string
+	host             string
+	port             int
+	noBrowser        bool
+	initEnvIfMissing bool
+	colorMode        string
 }
 
 var newAuthClient = qobuzauth.New
@@ -85,7 +86,9 @@ func NewRoot(version string) *cobra.Command {
 }
 
 func serveCommand(o *options) *cobra.Command {
-	return &cobra.Command{Use: "serve", Short: "Start the embedded web application", Long: "Start the local web application, bind the requested port atomically, and open\nthe resulting URL in the default browser.", Example: "  qobuz-curator serve\n  qobuz-curator serve --port 49277 --no-browser", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error { return serve(cmd, o) }}
+	cmd := &cobra.Command{Use: "serve", Short: "Start the embedded web application", Long: "Start the local web application, bind the requested port atomically, and open\nthe resulting URL in the default browser.", Example: "  qobuz-curator serve\n  qobuz-curator serve --port 49277 --no-browser", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error { return serve(cmd, o) }}
+	cmd.Flags().BoolVar(&o.initEnvIfMissing, "init-env-if-missing", false, "create a missing explicit config from QOBUZ_CURATOR_* environment values")
+	return cmd
 }
 
 func healthCommand(o *options) *cobra.Command {
@@ -136,6 +139,22 @@ func configureLogger(cfg config.Config) (func(), error) {
 }
 
 func serve(cmd *cobra.Command, o *options) error {
+	if o.initEnvIfMissing {
+		if o.configFile == "" {
+			return fmt.Errorf("--init-env-if-missing requires an explicit --config path")
+		}
+		if _, err := os.Stat(o.configFile); errors.Is(err, os.ErrNotExist) {
+			cfg, initialErr := config.InitialFromEnvironment()
+			if initialErr != nil {
+				return fmt.Errorf("initialize configuration from environment: %w", initialErr)
+			}
+			if initialErr = writeInitialConfig(o.configFile, cfg, false); initialErr != nil {
+				return initialErr
+			}
+		} else if err != nil {
+			return fmt.Errorf("inspect configuration file %s: %w", o.configFile, err)
+		}
+	}
 	cfg, e := load(cmd, o)
 	if e != nil {
 		return e

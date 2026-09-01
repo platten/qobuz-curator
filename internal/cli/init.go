@@ -26,15 +26,21 @@ type configPrompter struct {
 }
 
 func initCommand(o *options) *cobra.Command {
-	var interactive, force bool
+	var interactive, fromEnvironment, force bool
 	cmd := &cobra.Command{
 		Use:     "init",
 		Short:   "Create a configuration file",
-		Long:    "Create a complete configuration file in the platform-native user\nconfiguration directory. Interactive mode prompts for settings and hides secret input\nwhen connected to a terminal.",
-		Example: "  qobuz-curator init\n  qobuz-curator init --interactive\n  qobuz-curator init --config ./qobuz-curator.yaml",
+		Long:    "Create a complete configuration file in the platform-native user\nconfiguration directory. Interactive mode prompts for settings and hides secret input\nwhen connected to a terminal. Environment mode persists QOBUZ_CURATOR_* values and\nis intended for explicit container provisioning.",
+		Example: "  qobuz-curator init\n  qobuz-curator init --interactive\n  qobuz-curator init --env --config /data/qobuz-curator.yaml",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cfg, err := config.Initial()
+			var cfg config.Config
+			var err error
+			if fromEnvironment {
+				cfg, err = config.InitialFromEnvironment()
+			} else {
+				cfg, err = config.Initial()
+			}
 			if err != nil {
 				return err
 			}
@@ -61,7 +67,9 @@ func initCommand(o *options) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "prompt for configuration values")
+	cmd.Flags().BoolVar(&fromEnvironment, "env", false, "persist QOBUZ_CURATOR_* environment values")
 	cmd.Flags().BoolVar(&force, "force", false, "replace an existing configuration file")
+	cmd.MarkFlagsMutuallyExclusive("interactive", "env")
 	return cmd
 }
 

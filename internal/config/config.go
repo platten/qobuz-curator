@@ -59,6 +59,7 @@ func defaults(v *viper.Viper) {
 	v.SetDefault("data_dir", "./data")
 	v.SetDefault("database_name", "qobuz_curator.sqlite3")
 	v.SetDefault("host", "127.0.0.1")
+	v.SetDefault("allowed_hosts", []string{})
 	// Port zero asks the operating system to reserve a currently unused
 	// ephemeral port. This avoids both common-port collisions and the
 	// check-then-bind race inherent in probing a port before listening.
@@ -66,11 +67,18 @@ func defaults(v *viper.Viper) {
 	v.SetDefault("match_threshold", 0.72)
 	v.SetDefault("preview_ttl_hours", 72)
 	v.SetDefault("provider", "fake")
+	v.SetDefault("qobuz_app_id", "")
+	v.SetDefault("qobuz_user_auth_token", "")
 	v.SetDefault("qobuz_api_base", "https://www.qobuz.com/api.json/0.2")
+	v.SetDefault("openai_api_key", "")
 	v.SetDefault("openai_model", "gpt-5.6-luna")
 	v.SetDefault("openai_api_base", "https://api.openai.com/v1")
+	v.SetDefault("session_secret", "")
 	v.SetDefault("session_ttl_hours", 24)
+	v.SetDefault("password_hash", "")
 	v.SetDefault("auth_disabled", true)
+	v.SetDefault("secure_cookies", false)
+	v.SetDefault("no_browser", false)
 	v.SetDefault("log_level", "info")
 	v.SetDefault("log_format", "console")
 	v.SetDefault("log_color", true)
@@ -81,17 +89,36 @@ func defaults(v *viper.Viper) {
 // cryptographically random session secret so authentication can later be
 // enabled without reusing an ephemeral secret.
 func Initial() (Config, error) {
+	return initial(false)
+}
+
+// InitialFromEnvironment returns a complete initial configuration with
+// QOBUZ_CURATOR_* environment variables applied over the built-in defaults.
+// It is intentionally separate from Initial so callers must explicitly opt in
+// before environment-provided credentials can be persisted.
+func InitialFromEnvironment() (Config, error) {
+	return initial(true)
+}
+
+func initial(fromEnvironment bool) (Config, error) {
 	v := viper.New()
 	defaults(v)
+	if fromEnvironment {
+		v.SetEnvPrefix("QOBUZ_CURATOR")
+		v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+		v.AutomaticEnv()
+	}
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
 		return Config{}, fmt.Errorf("decode initial configuration: %w", err)
 	}
-	secret, err := newSessionSecret()
-	if err != nil {
-		return Config{}, err
+	if cfg.SessionSecret == "" {
+		secret, err := newSessionSecret()
+		if err != nil {
+			return Config{}, err
+		}
+		cfg.SessionSecret = secret
 	}
-	cfg.SessionSecret = secret
 	return cfg, cfg.Validate()
 }
 

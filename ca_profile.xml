@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommunityApplications>
+  <Profile>Qobuz Curator is a local-first tool for turning music recommendations into reviewed Qobuz playlists. This repository contains the application, container image source, and maintained Unraid Community Applications template. Use GitHub Issues for support.</Profile>
+  <Icon>https://raw.githubusercontent.com/platten/qobuz-curator/main/unraid/qobuz-curator-icon.png</Icon>
+  <WebPage>https://github.com/platten/qobuz-curator</WebPage>
+</CommunityApplications>

@@ -26,6 +26,6 @@ ENV QOBUZ_CURATOR_HOST=0.0.0.0 \
     QOBUZ_CURATOR_LOG_COLOR=false
 EXPOSE 49277
 VOLUME ["/data"]
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD ["/qobuz-curator", "healthcheck"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD ["/qobuz-curator", "healthcheck", "--config", "/data/qobuz-curator.yaml"]
 ENTRYPOINT ["/qobuz-curator"]
-CMD ["serve", "--no-browser"]
+CMD ["serve", "--no-browser", "--init-env-if-missing", "--config", "/data/qobuz-curator.yaml"]

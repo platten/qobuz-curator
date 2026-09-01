@@ -61,6 +61,12 @@ generated automatically, and the resulting file is restricted to the current
 user. Existing files are never replaced unless `--force` is supplied. Use
 `--config /path/to/file.yaml` to initialize a non-default location.
 
+For explicit container provisioning, `qobuz-curator init --env --config
+/data/qobuz-curator.yaml` applies the built-in defaults, persists supplied
+`QOBUZ_CURATOR_*` environment values, and generates a session secret when one
+was not supplied. Because this deliberately writes environment-provided tokens
+and keys to YAML, `--env` is opt-in and cannot be combined with `--interactive`.
+
 If the configuration is missing when the server starts, the CLI prints its
 expected location and both initialization commands. `qobuz-curator config-path`
 prints the default location directly. Kirsle's `configdir` library selects:
@@ -128,9 +134,21 @@ docker compose up --build -d
 ```
 
 Compose binds private-range port `49277` to localhost, mounts `./data` for YAML
-and SQLite state, overrides the container listener to `0.0.0.0`, runs without
-root, and drops Linux capabilities. On Unraid, map `/data` to persistent
-appdata and container port `49277` to the desired host port.
+and SQLite state, initializes a missing `/data/qobuz-curator.yaml` from
+`QOBUZ_CURATOR_*` environment values, overrides the container listener to
+`0.0.0.0`, runs without root, and drops Linux capabilities. Existing
+configuration files are never replaced during container startup.
+
+For Unraid, use [the included container template](unraid/qobuz-curator.xml).
+It maps `/data` to persistent appdata, exposes the Web UI on port `49277`, and
+retains the image's read-only, capability-free security settings. The generated
+configuration and SQLite state remain under `/mnt/user/appdata/qobuz-curator`
+by default.
+
+The template and root-level `ca_profile.xml` are ready for validation through
+the [Unraid Community Applications submission portal](https://ca.unraid.net/submit).
+Before public submission, confirm that the GHCR package is public, test a clean
+install on an Unraid host, and run the portal's Validate and Scan steps.
 
 The image also uses a read-only root filesystem. Ensure the mapped `/data`
 directory is writable by container UID/GID `65532`.

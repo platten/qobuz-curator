@@ -270,6 +270,11 @@ func TestHealthAndCommandErrors(t *testing.T) {
 	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "qobuz-curator init --interactive") {
 		t.Fatalf("missing config guidance: %v", err)
 	}
+	cmd = NewRoot("x")
+	cmd.SetArgs([]string{"serve", "--init-env-if-missing"})
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "requires an explicit --config") {
+		t.Fatalf("missing bootstrap path was accepted: %v", err)
+	}
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -295,6 +300,36 @@ func TestHealthAndCommandErrors(t *testing.T) {
 	cmd.SetArgs([]string{"serve", "--config", badDataConfig})
 	if err := cmd.Execute(); err == nil {
 		t.Fatal("invalid data directory")
+	}
+}
+
+func TestServeInitializesMissingConfigFromEnvironment(t *testing.T) {
+	for _, setting := range os.Environ() {
+		key, _, _ := strings.Cut(setting, "=")
+		if strings.HasPrefix(key, "QOBUZ_CURATOR_") {
+			t.Setenv(key, "")
+		}
+	}
+	path := filepath.Join(t.TempDir(), "nested", "qobuz-curator.yaml")
+	t.Setenv("QOBUZ_CURATOR_DATA_DIR", t.TempDir())
+	t.Setenv("QOBUZ_CURATOR_HOST", "0.0.0.0")
+	t.Setenv("QOBUZ_CURATOR_PORT", "49277")
+	t.Setenv("QOBUZ_CURATOR_PROVIDER", "qobuz")
+	t.Setenv("QOBUZ_CURATOR_NO_BROWSER", "true")
+	cmd := NewRoot("x")
+	cmd.SetArgs([]string{"serve", "--init-env-if-missing", "--config", path})
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "qobuz_app_id") {
+		t.Fatalf("unexpected bootstrap result: %v", err)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	for _, expected := range []string{"host: 0.0.0.0", "port: 49277", "provider: qobuz", "no_browser: true", "session_secret:"} {
+		if !strings.Contains(text, expected) {
+			t.Fatalf("bootstrapped configuration is missing %q:\n%s", expected, text)
+		}
 	}
 }
 

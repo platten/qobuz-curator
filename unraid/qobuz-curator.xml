@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Container version="2">
+  <Name>Qobuz Curator</Name>
+  <Repository>ghcr.io/platten/qobuz-curator:latest</Repository>
+  <Registry>https://github.com/users/platten/packages/container/package/qobuz-curator</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell/>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/platten/qobuz-curator/issues</Support>
+  <Project>https://github.com/platten/qobuz-curator</Project>
+  <ReadMe>https://github.com/platten/qobuz-curator#readme</ReadMe>
+  <Overview>Turn music recommendations into reviewed Qobuz playlists from a private, local-first web application.</Overview>
+  <Description>Qobuz Curator imports written or structured music recommendations, matches recordings against Qobuz, previews changes, and performs verified playlist writes. Configuration and SQLite state remain in appdata. On first start, the container creates its configuration from the supplied QOBUZ_CURATOR_* environment values.</Description>
+  <Category>Tools:Utilities MediaApp:Music</Category>
+  <WebUI>http://[IP]:[PORT:49277]</WebUI>
+  <Icon>https://raw.githubusercontent.com/platten/qobuz-curator/main/unraid/qobuz-curator-icon.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/platten/qobuz-curator/main/unraid/qobuz-curator.xml</TemplateURL>
+  <ExtraParams>--read-only --cap-drop=ALL --security-opt=no-new-privileges --tmpfs=/tmp:rw,noexec,nosuid,size=16m</ExtraParams>
+  <PostArgs/>
+  <Config Name="Appdata" Target="/data" Default="/mnt/user/appdata/qobuz-curator" Mode="rw" Description="Persistent configuration, SQLite database, and backups." Type="Path" Display="always" Required="true" Mask="false"/>
+  <Config Name="Web UI" Target="49277" Default="49277" Mode="tcp" Description="Host port for the Qobuz Curator web interface." Type="Port" Display="always" Required="true" Mask="false"/>
+  <Config Name="Provider" Target="QOBUZ_CURATOR_PROVIDER" Default="fake" Mode="" Description="Use fake for initial evaluation or qobuz after supplying Qobuz credentials." Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Qobuz App ID" Target="QOBUZ_CURATOR_QOBUZ_APP_ID" Default="" Mode="" Description="Qobuz web-player application ID." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="Qobuz User Token" Target="QOBUZ_CURATOR_QOBUZ_USER_AUTH_TOKEN" Default="" Mode="" Description="Qobuz user authentication token. Stored in appdata when the initial configuration is created." Type="Variable" Display="always" Required="false" Mask="true"/>
+  <Config Name="OpenAI API Key" Target="QOBUZ_CURATOR_OPENAI_API_KEY" Default="" Mode="" Description="Optional OpenAI API key for in-app recommendations. Stored in appdata when the initial configuration is created." Type="Variable" Display="always" Required="false" Mask="true"/>
+  <Config Name="OpenAI Model" Target="QOBUZ_CURATOR_OPENAI_MODEL" Default="gpt-5.6-luna" Mode="" Description="OpenAI model used for recommendations." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Authentication Disabled" Target="QOBUZ_CURATOR_AUTH_DISABLED" Default="true" Mode="" Description="Disable application login. Keep the Web UI private when enabled." Type="Variable" Display="advanced" Required="true" Mask="false"/>
+  <Config Name="Password Hash" Target="QOBUZ_CURATOR_PASSWORD_HASH" Default="" Mode="" Description="Password hash generated with qobuz-curator password-hash when authentication is enabled." Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="Session Secret" Target="QOBUZ_CURATOR_SESSION_SECRET" Default="" Mode="" Description="Optional 32+ character secret. A random value is generated in appdata when omitted." Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="Allowed Hosts" Target="QOBUZ_CURATOR_ALLOWED_HOSTS" Default="" Mode="" Description="Comma-separated external DNS names or IP addresses accepted by the Web UI." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Secure Cookies" Target="QOBUZ_CURATOR_SECURE_COOKIES" Default="false" Mode="" Description="Enable only when every browser connection uses HTTPS." Type="Variable" Display="advanced" Required="true" Mask="false"/>
+</Container>

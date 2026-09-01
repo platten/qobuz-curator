@@ -98,6 +98,50 @@ func TestInteractiveInit(t *testing.T) {
 	}
 }
 
+func TestEnvironmentInit(t *testing.T) {
+	for _, setting := range os.Environ() {
+		key, _, _ := strings.Cut(setting, "=")
+		if strings.HasPrefix(key, "QOBUZ_CURATOR_") {
+			t.Setenv(key, "")
+		}
+	}
+	path := filepath.Join(t.TempDir(), "qobuz-curator.yaml")
+	t.Setenv("QOBUZ_CURATOR_DATA_DIR", "/data")
+	t.Setenv("QOBUZ_CURATOR_HOST", "0.0.0.0")
+	t.Setenv("QOBUZ_CURATOR_PORT", "49277")
+	t.Setenv("QOBUZ_CURATOR_QOBUZ_USER_AUTH_TOKEN", "qobuz-secret-token")
+	cmd := NewRoot("test")
+	var output bytes.Buffer
+	cmd.SetOut(&output)
+	cmd.SetErr(&output)
+	cmd.SetArgs([]string{"init", "--env", "--config", path, "--color", "never"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(output.String(), "qobuz-secret-token") {
+		t.Fatal("environment initialization output disclosed a secret")
+	}
+	if err := os.Unsetenv("QOBUZ_CURATOR_DATA_DIR"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Unsetenv("QOBUZ_CURATOR_HOST"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Unsetenv("QOBUZ_CURATOR_PORT"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Unsetenv("QOBUZ_CURATOR_QOBUZ_USER_AUTH_TOKEN"); err != nil {
+		t.Fatal(err)
+	}
+	cfg, _, err := config.Load(path, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.DataDir != "/data" || cfg.Host != "0.0.0.0" || cfg.Port != 49277 || cfg.QobuzUserToken != "qobuz-secret-token" {
+		t.Fatal("environment values were not saved")
+	}
+}
+
 func TestInteractivePromptValidation(t *testing.T) {
 	prompter := &configPrompter{reader: bufio.NewReader(bytes.NewBufferString("not-a-number\n")), input: bytes.NewBuffer(nil), output: &bytes.Buffer{}}
 	if _, err := prompter.integer("Port", 0); err == nil {

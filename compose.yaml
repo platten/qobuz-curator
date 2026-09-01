@@ -2,7 +2,7 @@ services:
   qobuz-curator:
     build: .
     container_name: qobuz-curator
-    command: ["serve", "--no-browser", "--config", "/data/qobuz-curator.yaml"]
+    command: ["serve", "--no-browser", "--init-env-if-missing", "--config", "/data/qobuz-curator.yaml"]
     environment:
       QOBUZ_CURATOR_HOST: 0.0.0.0
       QOBUZ_CURATOR_PORT: 49277
