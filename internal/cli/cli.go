@@ -16,16 +16,12 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
+	"github.com/pawel/qobuz-curator/internal/application"
 	"github.com/pawel/qobuz-curator/internal/browser"
 	"github.com/pawel/qobuz-curator/internal/config"
 	"github.com/pawel/qobuz-curator/internal/logging"
-	"github.com/pawel/qobuz-curator/internal/provider"
 	"github.com/pawel/qobuz-curator/internal/qobuzauth"
-	"github.com/pawel/qobuz-curator/internal/recommend"
 	"github.com/pawel/qobuz-curator/internal/security"
-	"github.com/pawel/qobuz-curator/internal/service"
-	"github.com/pawel/qobuz-curator/internal/store"
-	"github.com/pawel/qobuz-curator/internal/webapp"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.yaml.in/yaml/v3"
@@ -165,27 +161,13 @@ func serve(cmd *cobra.Command, o *options) error {
 	}
 	defer cleanupLogger()
 	zap.L().Debug("configuration loaded", zap.String("config_file", configSource(o.configFile)), zap.String("provider", cfg.Provider), zap.String("host", cfg.Host), zap.Int("port", cfg.Port))
-	if cfg.Provider == "qobuz" && (cfg.QobuzAppID == "" || cfg.QobuzUserToken == "") {
-		return fmt.Errorf("qobuz_app_id and qobuz_user_auth_token are required for qobuz")
-	}
-	if e = os.MkdirAll(cfg.DataDir, 0700); e != nil {
-		return e
-	}
-	db, e := store.Open(cfg.DatabasePath())
+	runtime, e := application.Open(cfg)
 	if e != nil {
 		return e
 	}
 	defer func() {
-		if err := db.Close(); err != nil {
-			zap.L().Warn("close database", zap.Error(err))
-		}
+		_ = runtime.Close()
 	}()
-	p := provider.New(cfg)
-	svc := &service.Service{Config: cfg, Store: db, Provider: p}
-	app, e := webapp.New(cfg, svc, p, recommend.New(cfg), db)
-	if e != nil {
-		return e
-	}
 	listener, e := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.Host, cfg.Port))
 	if e != nil {
 		return e
@@ -223,7 +205,7 @@ func serve(cmd *cobra.Command, o *options) error {
 		}()
 	}
 	server := &http.Server{
-		Handler:           app.Handler(),
+		Handler:           runtime.Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      2 * time.Minute,

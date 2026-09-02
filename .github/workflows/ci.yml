@@ -75,6 +75,214 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  desktop-linux:
+    name: Desktop Linux ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+            appimage_arch: x86_64
+            appimagetool_sha256: ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
+            runtime_sha256: 2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            appimage_arch: aarch64
+            appimagetool_sha256: f0837e7448a0c1e4e650a93bb3e85802546e60654ef287576f46c71c126a9158
+            runtime_sha256: 00cbdfcf917cc6c0ff6d3347d59e0ca1f7f45a6df1a428a0d6d8a78664d87444
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.x"
+          cache: true
+      - name: Install native build dependencies
+        run: sudo apt-get update && sudo apt-get install --yes build-essential libgtk-3-dev libwebkit2gtk-4.1-dev
+      - name: Select artifact version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            echo "VERSION=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
+          else
+            echo "VERSION=v0.0.0-ci.$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+          fi
+      - name: Install pinned build tools
+        shell: bash
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+          go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.12.0
+      - name: Download verified AppImage tools
+        shell: bash
+        run: |
+          curl --fail --location --silent --show-error \
+            "https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-${{ matrix.appimage_arch }}.AppImage" \
+            --output "$RUNNER_TEMP/appimagetool.AppImage"
+          echo "${{ matrix.appimagetool_sha256 }}  $RUNNER_TEMP/appimagetool.AppImage" | sha256sum --check
+          curl --fail --location --silent --show-error \
+            "https://github.com/AppImage/type2-runtime/releases/download/20251108/runtime-${{ matrix.appimage_arch }}" \
+            --output "$RUNNER_TEMP/appimage-runtime"
+          echo "${{ matrix.runtime_sha256 }}  $RUNNER_TEMP/appimage-runtime" | sha256sum --check
+          chmod 0755 "$RUNNER_TEMP/appimagetool.AppImage"
+      - name: Build desktop binary
+        shell: bash
+        run: bash scripts/build-desktop.sh "linux/${{ matrix.arch }}" "dist/desktop-linux-${{ matrix.arch }}"
+      - name: Package AppImage and Debian archive
+        shell: bash
+        env:
+          APPIMAGETOOL: ${{ runner.temp }}/appimagetool.AppImage
+          APPIMAGE_RUNTIME: ${{ runner.temp }}/appimage-runtime
+        run: |
+          bash scripts/package-linux.sh \
+            "dist/desktop-linux-${{ matrix.arch }}/qobuz-curator-desktop" \
+            "${{ matrix.arch }}" "$VERSION" "dist/desktop-linux-${{ matrix.arch }}"
+      - name: Generate desktop SBOM and checksums
+        shell: bash
+        run: |
+          cyclonedx-gomod bin -std -json -version "$VERSION" \
+            -output "dist/desktop-linux-${{ matrix.arch }}/qobuz-curator-desktop-linux-${{ matrix.arch }}.cdx.json" \
+            "dist/desktop-linux-${{ matrix.arch }}/qobuz-curator-desktop"
+          cd "dist/desktop-linux-${{ matrix.arch }}"
+          mv qobuz-curator-desktop "qobuz-curator-desktop-linux-${{ matrix.arch }}"
+          mv VERSION.txt "VERSION-linux-${{ matrix.arch }}.txt"
+          find . -maxdepth 1 -type f ! -name 'SHA256SUMS-*' -printf '%f\n' | sort | xargs sha256sum > "SHA256SUMS-linux-${{ matrix.arch }}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: qobuz-curator-desktop-linux-${{ matrix.arch }}-${{ github.sha }}
+          path: dist/desktop-linux-${{ matrix.arch }}/*
+          if-no-files-found: error
+          retention-days: 14
+
+  desktop-windows:
+    name: Desktop Windows ${{ matrix.arch }}
+    runs-on: windows-latest
+    timeout-minutes: 40
+    env:
+      WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+      WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.x"
+          cache: true
+      - name: Install NSIS
+        shell: powershell
+        run: choco install nsis --yes --no-progress
+      - name: Select artifact version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            echo "VERSION=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
+          else
+            echo "VERSION=v0.0.0-ci.$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+          fi
+      - name: Install pinned build tools
+        shell: powershell
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+          go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.12.0
+      - name: Build executable and NSIS installer
+        shell: bash
+        run: bash scripts/build-desktop.sh "windows/${{ matrix.arch }}" "dist/desktop-windows-${{ matrix.arch }}"
+      - name: Sign Windows artifacts when credentials are configured
+        if: env.WINDOWS_CERTIFICATE_BASE64 != ''
+        shell: powershell
+        run: ./scripts/sign-windows.ps1 -ArtifactDirectory "dist/desktop-windows-${{ matrix.arch }}"
+      - name: Generate desktop SBOM and checksums
+        shell: bash
+        run: |
+          mv "dist/desktop-windows-${{ matrix.arch }}/qobuz-curator-desktop.exe" \
+            "dist/desktop-windows-${{ matrix.arch }}/qobuz-curator-desktop-windows-${{ matrix.arch }}.exe"
+          cyclonedx-gomod bin -std -json -version "$VERSION" \
+            -output "dist/desktop-windows-${{ matrix.arch }}/qobuz-curator-desktop-windows-${{ matrix.arch }}.cdx.json" \
+            "dist/desktop-windows-${{ matrix.arch }}/qobuz-curator-desktop-windows-${{ matrix.arch }}.exe"
+          cd "dist/desktop-windows-${{ matrix.arch }}"
+          mv VERSION.txt "VERSION-windows-${{ matrix.arch }}.txt"
+          find . -maxdepth 1 -type f ! -name 'SHA256SUMS-*' -printf '%f\n' | sort | xargs sha256sum > "SHA256SUMS-windows-${{ matrix.arch }}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: qobuz-curator-desktop-windows-${{ matrix.arch }}-${{ github.sha }}
+          path: dist/desktop-windows-${{ matrix.arch }}/*
+          if-no-files-found: error
+          retention-days: 14
+
+  desktop-macos:
+    name: Desktop macOS ${{ matrix.arch }}
+    runs-on: macos-15
+    timeout-minutes: 40
+    env:
+      MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+      MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+      MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64, universal]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.x"
+          cache: true
+      - name: Select artifact version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            echo "VERSION=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
+          else
+            echo "VERSION=v0.0.0-ci.$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+          fi
+      - name: Install pinned build tools
+        shell: bash
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+          go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.12.0
+      - name: Build application
+        shell: bash
+        run: bash scripts/build-desktop.sh "darwin/${{ matrix.arch }}" build-output/macos
+      - name: Sign and notarize when credentials are configured
+        if: env.MACOS_CERTIFICATE_BASE64 != ''
+        shell: bash
+        run: bash scripts/sign-macos.sh "build-output/macos/Qobuz Curator.app"
+      - name: Package application, SBOM, and checksums
+        shell: bash
+        run: |
+          mkdir -p dist/desktop-macos
+          ditto -c -k --keepParent "build-output/macos/Qobuz Curator.app" \
+            "dist/desktop-macos/qobuz-curator-desktop-${VERSION}-macos-${{ matrix.arch }}.zip"
+          cyclonedx-gomod bin -std -json -version "$VERSION" \
+            -output "dist/desktop-macos/qobuz-curator-desktop-macos-${{ matrix.arch }}.cdx.json" \
+            "build-output/macos/Qobuz Curator.app/Contents/MacOS/qobuz-curator-desktop"
+          printf '%s\n' "$VERSION" > "dist/desktop-macos/VERSION-macos-${{ matrix.arch }}.txt"
+          cd dist/desktop-macos
+          : > "SHA256SUMS-macos-${{ matrix.arch }}"
+          for file in *; do
+            [[ -f "$file" && "$file" != "SHA256SUMS-macos-${{ matrix.arch }}" ]] || continue
+            shasum -a 256 "$file" >> "SHA256SUMS-macos-${{ matrix.arch }}"
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: qobuz-curator-desktop-macos-${{ matrix.arch }}-${{ github.sha }}
+          path: dist/desktop-macos/*
+          if-no-files-found: error
+          retention-days: 14
+
   container:
     needs: [test, artifacts]
     runs-on: ubuntu-latest
@@ -95,7 +303,7 @@ jobs:
 
   release:
     if: github.event_name == 'push' && github.ref_type == 'tag'
-    needs: [test, artifacts, container]
+    needs: [test, artifacts, container, desktop-linux, desktop-windows, desktop-macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -105,10 +313,18 @@ jobs:
         with:
           name: qobuz-curator-${{ github.sha }}
           path: dist/
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: qobuz-curator-desktop-*-${{ github.sha }}
+          path: dist/desktop/
+          merge-multiple: true
       - name: Verify release artifacts
         shell: bash
-        working-directory: dist
-        run: sha256sum -c SHA256SUMS
+        run: |
+          (cd dist && sha256sum -c SHA256SUMS)
+          for manifest in dist/desktop/SHA256SUMS-*; do
+            (cd dist/desktop && sha256sum -c "$(basename "$manifest")")
+          done
       - name: Create release and upload artifacts
         shell: bash
         env:
@@ -130,6 +346,7 @@ jobs:
             dist/qobuz-curator-windows-arm64.exe \
             dist/SHA256SUMS \
             dist/qobuz-curator.cdx.json \
+            dist/desktop/* \
             --repo "$GITHUB_REPOSITORY" \
             --clobber
 

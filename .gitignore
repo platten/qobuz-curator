@@ -1,12 +1,15 @@
 /.env
 qobuz-curator.yaml
 qobuz-curator
-qobuz-curator.exe
 coverage.out
 coverage
 *.cover
 dist/
 data/
+/desktop/build/bin/
+/desktop/build/windows/
+/desktop/frontend/
+/desktop/*-res.syso
 
 # Keep only the canonical example playlist under version control.
 /samples/*

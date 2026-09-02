@@ -1,0 +1,61 @@
+{{define "setup"}}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{if .Ready}}Settings{{else}}Welcome{{end}} · Qobuz Curator</title>
+  <link rel="stylesheet" href="/desktop/static/setup.css">
+  <script src="/desktop/static/setup.js" defer></script>
+</head>
+<body>
+  <div id="wait-overlay" class="wait-overlay" hidden><div class="wait-card" role="status" aria-live="polite"><span class="spinner" aria-hidden="true"></span><strong id="wait-message">Working…</strong><small>Please keep this window open.</small></div></div>
+  <header><div><span class="eyebrow">DESKTOP SETUP</span><h1>Qobuz Curator</h1></div>{{if .Ready}}<a class="button secondary" href="/">Back to curator</a>{{end}}</header>
+  <main>
+    {{if .Error}}<div class="notice error" role="alert"><strong>Setup could not be completed.</strong><p>{{.Error}}</p></div>{{end}}
+    {{if .Success}}<div class="notice success" role="status">{{.Success}}</div>{{end}}
+    {{if .VaultError}}<div class="notice error" role="alert"><strong>The operating-system credential store is unavailable.</strong><p>{{.VaultError}}</p><p>Qobuz Curator will not save credentials in a file. On Linux, start and unlock a Secret Service provider such as GNOME Keyring or KWallet, then reopen the application.</p></div>{{end}}
+
+    <section class="intro">
+      <div><span class="eyebrow">PRIVATE BY DEFAULT</span><h2>{{if .Ready}}Desktop settings{{else}}Let’s connect your music{{end}}</h2></div>
+      <p>Credentials are stored in {{.VaultName}}. The desktop configuration contains only non-secret preferences.</p>
+    </section>
+
+    <div class="grid">
+      <section class="panel">
+        <span class="step">1</span><h3>Qobuz account</h3>
+        {{if .QobuzConnected}}<p class="status good">Connected</p><p>Reconnect if the token has expired or you want to use another account.</p>{{else}}<p class="status">Not connected</p><p>Your system browser will open the official Qobuz authorization page.</p>{{end}}
+        <form method="post" action="/desktop/qobuz" data-wait-message="Waiting for Qobuz authorization…">
+          <input type="hidden" name="csrf" value="{{.CSRF}}">
+          <button {{if .VaultError}}disabled{{end}}>{{if .QobuzConnected}}Reconnect Qobuz{{else}}Connect Qobuz{{end}}</button>
+        </form>
+        {{if .QobuzConnected}}<form method="post" action="/desktop/qobuz/disconnect"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="danger">Disconnect</button></form>{{end}}
+      </section>
+
+      <section class="panel">
+        <span class="step">2</span><h3>OpenAI recommendations</h3>
+        <p class="status {{if .OpenAIConfigured}}good{{end}}">{{if .OpenAIConfigured}}API key saved{{else}}Optional{{end}}</p>
+        <form method="post" action="/desktop/openai" data-wait-message="Saving OpenAI settings…">
+          <input type="hidden" name="csrf" value="{{.CSRF}}">
+          <label>OpenAI API key<input type="password" name="openai_api_key" autocomplete="off" placeholder="{{if .OpenAIConfigured}}Leave blank to keep the saved key{{else}}sk-…{{end}}"></label>
+          {{if .OpenAIConfigured}}<label class="check"><input type="checkbox" name="remove" value="true"> Remove the saved API key</label>{{end}}
+          <button {{if .VaultError}}disabled{{end}}>Save OpenAI settings</button>
+        </form>
+      </section>
+
+      <section class="panel wide">
+        <span class="step">3</span><h3>Preferences</h3>
+        <form method="post" action="/desktop/preferences" data-wait-message="Applying preferences…" class="preferences">
+          <input type="hidden" name="csrf" value="{{.CSRF}}">
+          <label>OpenAI model<input name="openai_model" value="{{.OpenAIModel}}" required></label>
+          <label>Match confidence<input type="number" name="match_threshold" value="{{.MatchThreshold}}" min="0" max="1" step="0.01" required></label>
+          <label>Log level<select name="log_level"><option{{if eq .LogLevel "debug"}} selected{{end}}>debug</option><option{{if eq .LogLevel "info"}} selected{{end}}>info</option><option{{if eq .LogLevel "warn"}} selected{{end}}>warn</option><option{{if eq .LogLevel "error"}} selected{{end}}>error</option></select></label>
+          <button>Save preferences</button>
+        </form>
+      </section>
+    </div>
+
+    {{if .Ready}}<section class="finish"><div><strong>Setup complete</strong><p>Qobuz is connected and the curator is ready.</p></div><a class="button" href="/">Open Qobuz Curator</a></section>{{else}}<section class="finish muted"><div><strong>Connect Qobuz to continue</strong><p>OpenAI is optional and can be configured later.</p></div></section>{{end}}
+    <details><summary>Local storage details</summary><dl><dt>Configuration</dt><dd>{{.ConfigPath}}</dd><dt>Database directory</dt><dd>{{.DataDir}}</dd></dl></details>
+  </main>
+</body>
+</html>{{end}}

@@ -39,6 +39,7 @@ type App struct {
 	Provider    provider.Provider
 	Recommender recommend.Recommender
 	Store       *store.Store
+	SettingsURL string
 	templates   *template.Template
 	logins      *loginLimiter
 	passwords   chan struct{}
@@ -46,12 +47,12 @@ type App struct {
 	active      map[string]int64
 }
 type page struct {
-	Title, CSRF, Error, PlaylistLoadError, RefinementPrompt, ChatGPTPrompt string
-	AuthDisabled, OpenAIEnabled                                            bool
-	Playlists                                                              []model.PlaylistSummary
-	Operations                                                             []model.Operation
-	Preview                                                                model.Preview
-	Operation                                                              model.Operation
+	Title, CSRF, Error, PlaylistLoadError, RefinementPrompt, ChatGPTPrompt, SettingsURL string
+	AuthDisabled, OpenAIEnabled                                                         bool
+	Playlists                                                                           []model.PlaylistSummary
+	Operations                                                                          []model.Operation
+	Preview                                                                             model.Preview
+	Operation                                                                           model.Operation
 }
 
 // New parses embedded templates and wires the web application dependencies.
@@ -179,6 +180,7 @@ func (a *App) csrf(w http.ResponseWriter, r *http.Request, s security.Session) b
 	return true
 }
 func (a *App) render(w http.ResponseWriter, status int, name string, data page) {
+	data.SettingsURL = a.SettingsURL
 	var output bytes.Buffer
 	if e := a.templates.ExecuteTemplate(&output, name, data); e != nil {
 		zap.L().Error("render template", zap.String("template", name), zap.Error(e))

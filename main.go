@@ -15,7 +15,7 @@ import (
 
 // version is the source release fallback. Production builds replace it with
 // the exact Git-derived version through -ldflags "-X main.version=...".
-var version = "v0.3.0"
+var version = "v0.4.0"
 
 func main() {
 	bootLogger, loggerErr := logging.New("info", "console", term.IsTerminal(int(os.Stderr.Fd())), os.Stderr)

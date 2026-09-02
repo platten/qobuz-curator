@@ -1,0 +1,10 @@
+Package: qobuz-curator-desktop
+Version: @VERSION@
+Section: sound
+Priority: optional
+Architecture: @ARCH@
+Maintainer: Qobuz Curator contributors
+Depends: libgtk-3-0, libwebkit2gtk-4.1-0
+Recommends: gnome-keyring
+Description: Desktop playlist curation for Qobuz and Roon
+ Turn written or JSON music recommendations into reviewed Qobuz playlists.

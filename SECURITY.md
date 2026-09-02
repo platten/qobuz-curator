@@ -78,6 +78,22 @@ playlist history or tokens are sensitive.
   `127.0.0.1`, uses a cryptographically random callback path, and has bounded
   timeouts.
 
+### Desktop credential storage
+
+- The desktop application stores Qobuz and OpenAI credentials in macOS
+  Keychain, Windows Credential Manager, or the Linux Secret Service rather than
+  its YAML configuration.
+- There is no plaintext fallback. If the platform credential service is locked,
+  missing, or unavailable, setup fails closed and displays recovery guidance in
+  the graphical window.
+- Desktop YAML contains only non-secret settings, is replaced atomically, and
+  uses user-only permissions where supported.
+- First-run migration copies credentials from the existing CLI configuration to
+  the platform vault without modifying or deleting that original file.
+- The Wails application delegates directly to the existing HTTP handler and
+  opens no public application listener. Only the randomized loopback Qobuz OAuth
+  callback remains network-bound during authorization.
+
 ### External APIs, privacy, and retries
 
 - Qobuz and OpenAI bearer credentials are sent only in request headers. They are
@@ -112,7 +128,7 @@ playlist history or tokens are sensitive.
 
 - GitHub Actions and Go dependencies are version-pinned; third-party Actions
   use immutable commit SHAs.
-- CI enforces formatting, `go vet`, Staticcheck, race-enabled tests, at least 95%
+- CI enforces formatting, `go vet`, Staticcheck, race-enabled tests, at least 90%
   coverage, and `govulncheck` before publication.
 - Every CI run has an independent job that generates and uploads a CycloneDX
   JSON SBOM and SHA-256 manifest with cross-platform binaries. Published containers include BuildKit

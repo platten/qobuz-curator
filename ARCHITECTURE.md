@@ -1,9 +1,10 @@
 # Qobuz Curator architecture
 
-Qobuz Curator is a local-first, single-user Go application. One executable
-contains the command-line interface, HTTP server, web assets, matching logic,
-OpenAI integration, Qobuz adapter, and SQLite persistence. The only runtime
-dependency is a writable data directory.
+Qobuz Curator is a local-first, single-user Go application. Its portable
+executable contains the command-line interface, HTTP server, web assets,
+matching logic, OpenAI integration, Qobuz adapter, and SQLite persistence. An
+additive Wails desktop shell embeds the same application handler in a native
+window. The only application runtime dependency is a writable data directory.
 
 ## System context
 
@@ -52,8 +53,13 @@ SQLite records.
 | Package | Responsibility |
 |---|---|
 | `main` | Rejects elevated execution, creates a signal-aware root context, initializes boot logging, and returns process exit status. |
+| `desktop` | Wails v2.15.0 native window, single-instance lifecycle, platform options, and embedded icon. |
 | `internal/cli` | Colorful Cobra commands, interactive configuration initialization, terminal spinners, HTTP lifecycle, browser launch, and atomic configuration/credential-file updates. |
+| `internal/application` | Shared configuration, store, web application, handler, and idempotent runtime lifecycle used by CLI and desktop. |
 | `internal/config` | Configdir placement, Viper precedence, safe initial/runtime defaults, logging settings, validation, URL policy, and cryptographic session-secret generation. |
+| `internal/configfile` | Atomic, user-private desktop YAML persistence. |
+| `internal/credentials` | Platform credential-vault abstraction for Qobuz and OpenAI secrets. |
+| `internal/desktopapp` | Graphical first-run/setup controller, legacy-config migration, settings, and Wails response adapter. |
 | `internal/logging` | Zap console/JSON encoders, colored levels, and critical-event convention. |
 | `internal/privilege` | Cross-platform root/elevated-token detection and refusal. |
 | `internal/httpretry` | Safe-operation classification, bounded attempts, jittered backoff, `Retry-After`, and cancellation. |
@@ -170,6 +176,13 @@ The application does not trust `X-Forwarded-*` headers. A reverse proxy is
 responsible for TLS termination and its own edge request limits, but the app's
 security decisions continue to use the direct peer and configured host list.
 
+The desktop shell passes requests directly to the shared HTTP handler through
+Wails' asset server and does not expose an application TCP listener. The
+adapter translates safe relative HTTP redirects into restrictive navigation
+documents for consistent Wails v2 behavior; external redirect targets are
+rejected. Qobuz authorization still uses the existing randomized,
+loopback-only OAuth callback because the upstream browser flow requires it.
+
 ## Deployment model and limits
 
 The supported deployment is one process or one container with one writable
@@ -217,10 +230,12 @@ cookies, tokens, and authorization codes.
 ```mermaid
 flowchart LR
     Source[Go source and embedded assets] --> Checks[Format, vet, Staticcheck, race tests, coverage, govulncheck]
-    Checks --> Scripts[build.sh / build.ps1]
-    Scripts --> Binaries[6 static platform binaries]
+    Checks --> Scripts[CLI and Wails build scripts]
+    Scripts --> Binaries[Portable binaries]
+    Scripts --> Desktop[Desktop binaries and packages]
     Scripts --> SBOM[CycloneDX JSON SBOM]
     Binaries --> SHA[SHA-256 manifest]
+    Desktop --> SHA
     SBOM --> SHA
     Checks --> Image[Scratch container]
     Image --> Attest[Build provenance and image SBOM]
@@ -229,7 +244,9 @@ flowchart LR
 Both local release scripts invoke the same pinned CycloneDX generator and fail
 closed if SBOM generation fails. An independent CI job uploads binaries,
 checksums, license, documentation, and SBOM on every run. Tagged releases attach
-the compiled binaries, checksums, and SBOM to the GitHub Release. Their container
+the compiled binaries, unsigned desktop packages, checksums, and SBOMs to the
+GitHub Release. Desktop signing and macOS notarization are secret-gated and
+ready to activate without changing the unsigned build path. Container
 publications additionally carry BuildKit provenance and an image SBOM.
 
 ## Extension points

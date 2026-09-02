@@ -17,6 +17,8 @@ Qobuz Curator is a single cross-platform Go executable that turns written or JSO
 - Emit structured Zap logs in colored console or JSON format.
 - Retry temporary read-only failures with bounded exponential backoff and jitter.
 - Run on Windows, Linux, macOS, Docker, and Unraid.
+- Use the optional native Wails desktop application with graphical setup and
+  platform credential storage.
 
 ## Build and run
 
@@ -28,7 +30,7 @@ go build -trimpath -o qobuz-curator .
 ./qobuz-curator
 ```
 
-The source fallback version is `v0.3.0`. Release builds replace it with the
+The source fallback version is `v0.4.0`. Release builds replace it with the
 exact Git tag through linker flags. Go modules do not declare a package version
 inside `go.mod`; the publishable module version is the semantic Git tag.
 
@@ -51,6 +53,34 @@ qobuz-curator version
 Browser launch failure is only a warning. Containers use `--no-browser`.
 The executable refuses to run as Unix root or with an elevated Windows token;
 no command needs those privileges.
+
+## Desktop application
+
+The Wails v2.15.0 desktop application is an additional distribution: the CLI,
+browser service, Docker image, and Unraid template remain supported. It embeds
+the same Go HTTP handler in a native window without opening a public application
+listener. First-run Qobuz authorization, optional OpenAI setup, preferences,
+reconnection, and disconnection are completely graphical.
+
+Desktop secrets are stored in macOS Keychain, Windows Credential Manager, or a
+Linux Secret Service provider such as GNOME Keyring or KWallet. The desktop
+configuration YAML contains only non-secret settings and is written atomically
+with user-only permissions. If the existing CLI configuration is found on first
+run, its settings and credentials are copied into the desktop configuration and
+credential vault; the original CLI file is not modified. The desktop app fails
+closed with a graphical diagnostic if its credential vault is unavailable.
+
+For local development, install the pinned Wails CLI and run the desktop target:
+
+```bash
+go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+cd desktop
+wails dev -tags desktop,webkit2_41
+```
+
+Release packaging covers Windows and Linux AMD64/ARM64 plus macOS AMD64,
+ARM64, and universal. Builds are unsigned by default; CI contains opt-in,
+secret-gated Windows signing and macOS signing/notarization stages.
 
 ## Configuration
 
@@ -190,7 +220,7 @@ go tool cover -func=coverage.out
 CGO_ENABLED=0 go build -trimpath .
 ```
 
-Create all production artifacts locally with either shell:
+Create all portable CLI production artifacts locally with either shell:
 
 ```bash
 bash scripts/build.sh
@@ -205,12 +235,27 @@ and macOS binaries for AMD64 and ARM64, embed the version, generate a CycloneDX
 JSON SBOM from an actual production binary, and write `dist/SHA256SUMS`. Set `VERSION` in Bash or pass
 `-Version` in PowerShell to override the Git-derived version.
 
+Build one native desktop target with the pinned Wails toolchain:
+
+```bash
+bash scripts/build-desktop.sh linux/amd64
+bash scripts/build-desktop.sh windows/arm64
+bash scripts/build-desktop.sh darwin/universal
+```
+
+Linux `.deb` and AppImage packaging is handled by
+`scripts/package-linux.sh`. AppImage creation requires pinned `APPIMAGETOOL`
+and `APPIMAGE_RUNTIME` executables; CI downloads them and verifies their
+SHA-256 digests before use.
+
 GitHub Actions enforces formatting, vet, static analysis, vulnerability checks,
 race tests, and 90% coverage. Every CI run independently builds and uploads the
 same binary, checksum, license, README, and SBOM artifact set, so the SBOM job
 does not disappear when a separate test job fails. Successful validation also builds the Linux AMD64
-container. Release tags attach the compiled Linux, macOS, and Windows binaries,
-checksums, and SBOM to the GitHub Release. They also publish container images
+container. Release tags attach the portable binaries and unsigned desktop
+installers/packages for every supported architecture, checksums, and SBOMs to
+the GitHub Release. Signing activates only when repository signing secrets are
+configured. Releases also publish container images
 with provenance and a container SBOM to `ghcr.io/<owner>/<repository>`.
 
 ## Logging and failure handling

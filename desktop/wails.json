@@ -1,0 +1,17 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "Qobuz Curator",
+  "outputfilename": "qobuz-curator-desktop",
+  "wailsjsdir": "./frontend",
+  "author": {
+    "name": "Qobuz Curator contributors",
+    "email": ""
+  },
+  "info": {
+    "companyName": "Qobuz Curator",
+    "productName": "Qobuz Curator",
+    "productVersion": "0.4.0",
+    "copyright": "Copyright Qobuz Curator contributors",
+    "comments": "Built with Wails"
+  }
+}

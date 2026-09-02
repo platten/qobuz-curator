@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Qobuz Curator
+Comment=Turn music recommendations into reviewed Qobuz playlists
+Exec=qobuz-curator-desktop
+Icon=qobuz-curator
+Terminal=false
+Categories=Audio;AudioVideo;
+StartupWMClass=QobuzCuratorWindow
