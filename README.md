@@ -30,7 +30,7 @@ go build -trimpath -o qobuz-curator .
 ./qobuz-curator
 ```
 
-The source fallback version is `v0.4.0`. Release builds replace it with the
+The source fallback version is `v0.5.0`. Release builds replace it with the
 exact Git tag through linker flags. Go modules do not declare a package version
 inside `go.mod`; the publishable module version is the semantic Git tag.
 

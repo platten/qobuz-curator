@@ -10,7 +10,7 @@
   "info": {
     "companyName": "Qobuz Curator",
     "productName": "Qobuz Curator",
-    "productVersion": "0.4.0",
+    "productVersion": "0.5.0",
     "copyright": "Copyright Qobuz Curator contributors",
     "comments": "Built with Wails"
   }

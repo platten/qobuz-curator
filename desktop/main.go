@@ -29,7 +29,7 @@ import (
 //go:embed build/appicon.png
 var iconFS embed.FS
 
-var version = "v0.4.0"
+var version = "v0.5.0"
 
 type shell struct {
 	mu  sync.RWMutex
